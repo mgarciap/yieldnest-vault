@@ -35,17 +35,19 @@ contract MaxVaultViewer is BaseVaultViewer, AccessControlUpgradeable {
         uint256 assetsLength = assets.length;
 
         uint256 underlyingAssetsLength = _getAssetStorage().underlyingAssetsLength;
-        if (assetsLength < underlyingAssetsLength) revert InvalidAssets();
+        if (assetsLength <= underlyingAssetsLength) revert InvalidAssets();
 
         uint256 strategiesLength = assetsLength - underlyingAssetsLength;
 
         address[] memory strategies = new address[](strategiesLength);
         uint256[] memory balances = new uint256[](strategiesLength);
 
-        for (uint256 i = 0; i < strategiesLength; ++i) {
+        uint256 j = 0;
+        for (uint256 i = 0; i < assetsLength; ++i) {
             if (!isUnderlyingAsset(assets[i])) {
-                strategies[i] = assets[i];
-                balances[i] = IERC20Metadata(assets[i]).balanceOf(address(vault));
+                strategies[j] = assets[i];
+                balances[j] = IERC20Metadata(assets[i]).balanceOf(address(vault));
+                j++;
             }
         }
 
@@ -94,6 +96,10 @@ contract MaxVaultViewer is BaseVaultViewer, AccessControlUpgradeable {
         return _getAssetStorage().underlyingAssets[asset_];
     }
 
+    function getUnderlyingAssetsLength() external view returns (uint256) {
+        return _getAssetStorage().underlyingAssetsLength;
+    }
+
     function _addUnderlyingAsset(address asset_) internal onlyVaultAsset(asset_) {
         if (asset_ == address(0)) revert ZeroAddress();
         if (_getAssetStorage().underlyingAssets[asset_]) revert InvalidAssetAdd(asset_);
@@ -110,5 +116,7 @@ contract MaxVaultViewer is BaseVaultViewer, AccessControlUpgradeable {
 
         _getAssetStorage().underlyingAssets[asset_] = false;
         _getAssetStorage().underlyingAssetsLength -= 1;
+
+        emit RemoveUnderlyingAsset(asset_);
     }
 }
