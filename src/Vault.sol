@@ -11,8 +11,6 @@ contract Vault is BaseVault {
 
     string public constant VAULT_VERSION = "0.1.1";
 
-    error ExceedsMaxBasisPoints();
-
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
     struct FeeStorage {
@@ -87,8 +85,11 @@ contract Vault is BaseVault {
      * @dev Only callable by accounts with FEE_MANAGER_ROLE
      */
     function setBaseWithdrawalFee(uint64 baseWithdrawalFee_) external virtual onlyRole(FEE_MANAGER_ROLE) {
-        if (baseWithdrawalFee_ > FeeMath.BASIS_POINT_SCALE) revert ExceedsMaxBasisPoints();
-        _getFeeStorage().baseWithdrawalFee = baseWithdrawalFee_;
+        if (baseWithdrawalFee_ > FeeMath.BASIS_POINT_SCALE) revert ExceedsMaxBasisPoints(baseWithdrawalFee_);
+        FeeStorage storage fees = _getFeeStorage();
+        uint64 oldFee = fees.baseWithdrawalFee;
+        fees.baseWithdrawalFee = baseWithdrawalFee_;
+        emit SetBaseWithdrawalFee(oldFee, baseWithdrawalFee_);
     }
 
     /**
