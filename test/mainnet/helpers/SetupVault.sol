@@ -10,7 +10,7 @@ import {MainnetContracts as MC} from "script/Contracts.sol";
 import {Etches} from "test/mainnet/helpers/Etches.sol";
 import {ynETHxVault} from "src/ynETHxVault.sol";
 import {IValidator} from "src/interface/IValidator.sol";
-import {BaseVaultViewer} from "src/utils/BaseVaultViewer.sol";
+import {MaxVaultViewer} from "src/utils/MaxVaultViewer.sol";
 
 contract SetupVault is Test, MainnetActors, Etches {
 
@@ -155,17 +155,21 @@ contract SetupVault is Test, MainnetActors, Etches {
         vault_.setProcessorRule(weth_, funcSig, rule);
     }    
 
-    function deployViewer(Vault vault_) public returns (BaseVaultViewer) {
-        BaseVaultViewer implementation = new BaseVaultViewer();
+    function deployViewer(Vault vault_) public returns (MaxVaultViewer viewer) {
+        MaxVaultViewer implementation = new MaxVaultViewer();
 
         bytes memory initData = abi.encodeWithSelector(
-            BaseVaultViewer.initialize.selector,
-            address(vault_)
+            MaxVaultViewer.initialize.selector,
+            address(vault_),
+            address(ADMIN)
         );
 
         TUP proxy = new TUP(address(implementation), ADMIN, initData);
+        viewer = MaxVaultViewer(payable(address(proxy)));
 
-        return BaseVaultViewer(payable(address(proxy)));
+        vm.startPrank(ADMIN);
+        viewer.grantRole(viewer.UPDATER_ROLE(), ADMIN);
+        vm.stopPrank();
     }
 
 }
